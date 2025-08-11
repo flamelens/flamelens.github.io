@@ -2,25 +2,94 @@
 const hamburger = document.querySelector('.hamburger');
 const navMenu = document.querySelector('.nav-menu');
 const navbar = document.querySelector('.navbar');
+const navLinks = document.querySelectorAll('.nav-link');
+const sections = document.querySelectorAll('section[id]');
 
-hamburger.addEventListener('click', () => {
-    hamburger.classList.toggle('active');
-    navMenu.classList.toggle('active');
+// Enhanced mobile menu management
+function closeMobileMenu() {
+    hamburger.classList.remove('active');
+    navMenu.classList.remove('active');
+    document.body.style.overflow = 'auto';
+    document.body.classList.remove('menu-open');
+}
+
+function openMobileMenu() {
+    hamburger.classList.add('active');
+    navMenu.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    document.body.classList.add('menu-open');
+}
+
+// Update active nav link function
+function updateActiveNavLink() {
+    const currentSection = getCurrentSection();
+    if (currentSection) {
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === `#${currentSection}`) {
+                link.classList.add('active');
+            }
+        });
+    }
+}
+
+function getCurrentSection() {
+    let current = '';
+    sections.forEach(section => {
+        const sectionTop = section.offsetTop - 100;
+        const sectionHeight = section.offsetHeight;
+        if (window.scrollY >= sectionTop && window.scrollY < sectionTop + sectionHeight) {
+            current = section.getAttribute('id');
+        }
+    });
+    return current;
+}
+
+// Enhanced hamburger click handler
+hamburger.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     
-    // Prevent body scroll when menu is open
     if (navMenu.classList.contains('active')) {
-        document.body.style.overflow = 'hidden';
+        closeMobileMenu();
     } else {
-        document.body.style.overflow = 'auto';
+        openMobileMenu();
     }
 });
 
 // Close mobile menu when clicking on a link
-document.querySelectorAll('.nav-link').forEach(n => n.addEventListener('click', () => {
-    hamburger.classList.remove('active');
-    navMenu.classList.remove('active');
-    document.body.style.overflow = 'auto';
-}));
+navLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+        // Allow the link to work normally for navigation
+        setTimeout(() => {
+            closeMobileMenu();
+        }, 100);
+    });
+});
+
+// Close mobile menu when clicking outside
+document.addEventListener('click', (e) => {
+    if (navMenu.classList.contains('active') && 
+        !navMenu.contains(e.target) && 
+        !hamburger.contains(e.target)) {
+        closeMobileMenu();
+    }
+});
+
+// Close mobile menu on escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && navMenu.classList.contains('active')) {
+        closeMobileMenu();
+        hamburger.focus(); // Return focus to hamburger for accessibility
+    }
+});
+
+// Close mobile menu on resize to desktop
+window.addEventListener('resize', () => {
+    if (window.innerWidth > 768 && navMenu.classList.contains('active')) {
+        closeMobileMenu();
+    }
+});
 
 // Enhanced navbar background on scroll with better performance
 let lastScrollY = window.scrollY;
@@ -35,12 +104,18 @@ function updateNavbar() {
         navbar.classList.remove('scrolled');
     }
     
-    // Hide/show navbar on scroll direction (optional)
-    if (currentScrollY > lastScrollY && currentScrollY > 200) {
-        navbar.style.transform = 'translateY(-100%)';
-    } else {
-        navbar.style.transform = 'translateY(0)';
+    // Don't hide navbar on mobile when menu is open
+    if (!navMenu.classList.contains('active')) {
+        // Hide/show navbar on scroll direction (optional)
+        if (currentScrollY > lastScrollY && currentScrollY > 200) {
+            navbar.style.transform = 'translateY(-100%)';
+        } else {
+            navbar.style.transform = 'translateY(0)';
+        }
     }
+    
+    // Update active nav link
+    updateActiveNavLink();
     
     lastScrollY = currentScrollY;
     ticking = false;
